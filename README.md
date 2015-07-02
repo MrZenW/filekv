@@ -1,2 +1,2 @@
 # filekv
-This is a use file system storage String/JSON data for key&amp;value storage system
+This is a key&value storage library which uses file system to store data.

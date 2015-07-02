@@ -1,7 +1,7 @@
 {
   "name": "filekv",
   "version": "1.0.0",
-  "description": "This is a use file system storage String/JSON data for key&value storage system",
+  "description": "This is a key&value storage library which uses file system to store data.",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -27,5 +27,6 @@
   "homepage": "https://github.com/zenboss/filekv",
   "dependencies": {
     "readfileline": "^1.0.0"
-  }
+  },
+  "devDependencies": {}
 }
