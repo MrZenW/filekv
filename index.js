@@ -21,11 +21,38 @@ var _parseInt = function(){
 	return parseInt.apply(this,arguments)||0;
 }
 
+var _getDataFileSubDir = function(md5key){
+	return md5key[0]+md5key[1]+md5key[2]+'/'+md5key[3]+md5key[4]+md5key[5];
+}
+
 var filekv = function(opt){
 	var self = this;
 	if(!!opt.fileDir)self.setFileDir(opt.fileDir);
 
 };
+filekv.prototype.tool = function(){};
+
+filekv.prototype.tool.mkdirs = function(dir,mode,cb){
+	var self = this;
+    if('function' == typeof mode){
+        cb = mode;
+        mode = '0777';
+    }
+    cb = cb || function(){};
+    var fs = require('fs');
+    var path = require('path');
+    fs.exists(dir,function(exists){
+        if(exists){
+            cb(null,dir);
+        }else{
+            self.mkdirs(path.dirname(dir),mode,function(){
+                fs.mkdir(dir,mode,cb);
+            });
+        }
+    });
+};
+
+
 
 
 filekv.prototype.setFileDir = function(path){
@@ -35,13 +62,14 @@ filekv.prototype.setFileDir = function(path){
 };
 
 filekv.prototype.has = function(key,opt,cb){
+	var self = this;
 	if('function' == typeof opt){
 		cb = opt;
 		opt = {};
 	}
 	cb = cb||function(){};
 	var md5key = md5(key);
-	var filePath = this.fileDir+'/'+md5key+'.fkv';
+	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	fs.exists(filePath,function(exists){
         if(exists){
             cb(null,filePath);
@@ -50,6 +78,7 @@ filekv.prototype.has = function(key,opt,cb){
         }
     });
 };
+
 
 filekv.prototype.get = function(key,opt,cb){
 	var self = this;
@@ -60,7 +89,7 @@ filekv.prototype.get = function(key,opt,cb){
 	cb = cb||function(){};
 
 	var md5key = md5(key);
-	var filePath = this.fileDir+'/'+md5key+'.fkv';
+	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	var valueData = null;
 	var createTime = 0;
 	var expireTime = 0;
@@ -98,6 +127,7 @@ filekv.prototype.get = function(key,opt,cb){
 	});
 };
 filekv.prototype.set = function(key,value,expireTime,opt,cb){
+	var self = this;
 	if('function' == typeof expireTime){
 		cb = expireTime;
 		expireTime = 0;
@@ -110,16 +140,20 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 	cb = cb||function(){};
 
 	var md5key = md5(key);
-	var filePath = this.fileDir+'/'+md5key+'.fkv';
-	var valueData = null;
-	var createTime = _parseInt(Date.now()/1000);
-	expireTime = _parseInt(expireTime);
-	var fileData = '';
-	fileData += expireTime+'\n';
-	fileData += createTime+'\n';
-	fileData += JSON.stringify(value);
+	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
 
-	fs.writeFile(filePath,fileData,cb)
+	self.tool.mkdirs(filePath,function(){
+		var fileAllPath = filePath+'/'+md5key+'.fkv';
+		var valueData = null;
+		var createTime = _parseInt(Date.now()/1000);
+		expireTime = _parseInt(expireTime);
+		var fileData = '';
+		fileData += expireTime+'\n';
+		fileData += createTime+'\n';
+		fileData += JSON.stringify(value);
+
+		fs.writeFile(fileAllPath,fileData,cb)
+	});
 
 };
 
@@ -131,7 +165,7 @@ filekv.prototype.del = function(key,opt,cb){
 	cb = cb||function(){};
 
 	var md5key = md5(key);
-	var filePath = this.fileDir+'/'+md5key+'.fkv';
+	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	fs.unlink(filePath,cb);
 };
 
