@@ -67,28 +67,25 @@ filekv.prototype.get = function(key,opt,cb){
 	readFileLine(filePath,function(lineData,lineNum){
 		if(lineNum==0){
 			expireTime = _parseInt(lineData+'');
-
 			if(expireTime>0 && expireTime<=_parseInt(Date.now()/1000)){
 				self.del(key);
 				cb(new Error('key expire'));
 				return false;
 			}
-
 		}else if(lineNum==1){
 			createTime = _parseInt(lineData+'');
-
 		}else if(lineNum==2){ //data
-
 			try{
-
-				valueData = JSON.parse(lineData+'');
+				valueData = JSON.parse(lineData+'', function(key, value) {
+    					return value && value.type === 'Buffer' 
+    					? new Buffer(value.data)
+      					: value; // Buffer类型特殊处理
+  				});
 			}catch(ex){
 				cb(ex);
 				return false;
 			}
-
 		}
-
 	},function(err,endType,nowLineNum){
 		// console.log(arguments)
 		if(err){
