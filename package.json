@@ -1,0 +1,31 @@
+{
+  "name": "filekv",
+  "version": "1.0.0",
+  "description": "This is a use file system storage String/JSON data for key&value storage system",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zenboss/filekv.git"
+  },
+  "keywords": [
+    "file",
+    "system",
+    "key",
+    "value"
+  ],
+  "author": "zenboss",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zenboss/filekv/issues"
+  },
+  "homepage": "https://github.com/zenboss/filekv",
+  "dependencies": {
+    "readfileline": "^1.0.0"
+  }
+}
