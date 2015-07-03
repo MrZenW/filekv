@@ -7,11 +7,10 @@
  */
 "use strict";
 var readFileLine = require('readFileLine');
-
 var fs = require('fs');
 var crypto = require('crypto');
 
- var _innerNextTick = setImmediate;
+var _innerNextTick = setImmediate;
 
 var md5 = function(str){
 	str = str+'';
@@ -19,13 +18,11 @@ var md5 = function(str){
 	md5hash.update(str);
 	return md5hash.digest('hex');
 };
-var _parseInt = function(){
-	return parseInt.apply(this,arguments)||0;
-}
+
 
 var _getDataFileSubDir = function(md5key){
 	return md5key[0]+md5key[1]+md5key[2]+'/'+md5key[3]+md5key[4]+md5key[5];
-}
+};
 
 var filekv = function(opt){
 	var self = this;
@@ -36,6 +33,11 @@ var filekv = function(opt){
 	self.workQueueNowRun = 0;
 
 };
+filekv.create = function(config){
+	return new filekv(config);
+};
+
+
 
 filekv.prototype.setFileDir = function(path){
 	var self = this;
@@ -43,7 +45,7 @@ filekv.prototype.setFileDir = function(path){
 	return self.fileDir;
 };
 filekv.prototype.setWorkQueueMax = function(maxnum){
-	this.workQueueMax = _parseInt(maxnum);
+	this.workQueueMax = parseInt(maxnum)||1;
 }
 
 
@@ -144,8 +146,8 @@ filekv.prototype.get = function(key,opt,cb){
 
 		readFileLine(filePath,function(lineData,lineNum){
 			if(lineNum==0){
-				expireTime = _parseInt(lineData+'');
-				if(expireTime>0 && expireTime<=_parseInt(Date.now()/1000)){
+				expireTime = parseInt(lineData+'')||0;
+				if(expireTime>0 && expireTime<=parseInt(Date.now()/1000)){
 					self.del(key);
 
 					queueCB.call(self,new Error('key expire'));
@@ -154,7 +156,7 @@ filekv.prototype.get = function(key,opt,cb){
 					return false;
 				}
 			}else if(lineNum==1){
-				createTime = _parseInt(lineData+'');
+				createTime = parseInt(lineData+'')||0;
 			}else if(lineNum==2){ //data
 				try{
 					valueData = JSON.parse(lineData+'', function(key, value) {
@@ -207,8 +209,8 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 
 		var fileAllPath = filePath+'/'+md5key+'.fkv';
 		var valueData = null;
-		var createTime = _parseInt(Date.now()/1000);
-		expireTime = _parseInt(expireTime);
+		var createTime = parseInt(Date.now()/1000);
+		expireTime = parseInt(expireTime)||0;
 		var fileData = '';
 		fileData += expireTime+'\n';
 		fileData += createTime+'\n';

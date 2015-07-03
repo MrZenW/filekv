@@ -1,8 +1,8 @@
 "use strict";
 var fs = require('fs');
 
-var fkv = require('../index.js');
-var fkvObj = new fkv({
+
+var fkvObj = require('../index.js').create({
 	fileDir:__dirname+'/data',
 	workQueueMax:1000
 
