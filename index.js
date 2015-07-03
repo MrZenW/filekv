@@ -11,6 +11,8 @@ var readFileLine = require('readFileLine');
 var fs = require('fs');
 var crypto = require('crypto');
 
+ var _innerNextTick = setImmediate;
+
 var md5 = function(str){
 	str = str+'';
 	var md5hash = crypto.createHash('md5');
@@ -41,7 +43,7 @@ filekv.prototype.setFileDir = function(path){
 	return self.fileDir;
 };
 filekv.prototype.setWorkQueueMax = function(maxnum){
-	self.workQueueMax = maxnum;
+	this.workQueueMax = _parseInt(maxnum);
 }
 
 
@@ -78,20 +80,23 @@ filekv.prototype._queue = function(doFn){
 };
 filekv.prototype._doQueue = function(){
 	var self = this;
-	if(self.workQueueNowRun<self.workQueueMax){
-		self.workQueueNowRun++;
-		var fn = self.workQueue.pop();
+	_innerNextTick(function(){
+		if(self.workQueueNowRun<self.workQueueMax){
+			self.workQueueNowRun++;
+			var fn = self.workQueue.pop();
 
-		if(!!fn){
-			fn(function(){
+			if(!!fn){
+				fn(function(){
+					self.workQueueNowRun--;
+					self._doQueue();
+					
+				})
+			}else{
 				self.workQueueNowRun--;
-				self._doQueue();
-			})
-		}else{
-			self.workQueueNowRun--;
-		}
+			}
 
-	}
+		}
+	});
 	
 };
 
@@ -199,6 +204,7 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 
 
 	self.tool.mkdirs(filePath,function(){
+
 		var fileAllPath = filePath+'/'+md5key+'.fkv';
 		var valueData = null;
 		var createTime = _parseInt(Date.now()/1000);

@@ -2,7 +2,37 @@
 var fs = require('fs');
 
 var fkv = require('../index.js');
-var fkvObj = new fkv({fileDir:fs.realpathSync('./data')});
+var fkvObj = new fkv({
+	fileDir:__dirname+'/data',
+	workQueueMax:1000
+
+
+});
+
+
+for(var i =0;i<90000;i++){
+	(function(){
+
+		var innerI = i;
+		console.log(innerI);
+		fkvObj.set(innerI,{id:innerI,str:Math.random()},function(err,data){
+			console.log(err,data,'for set text '+innerI);
+		});
+	})();
+}
+
+// for(var i =0;i<90000;i++){
+// 	(function(){
+
+// 		var innerI = i;
+// 		console.log(innerI);
+// 		fkvObj.get(innerI,function(err,data){
+// 			console.log(err,data,'for set text '+innerI);
+// 		});
+// 	})();
+// }
+
+
 
 fkvObj.set('test',{name:'zenboss'},function(err1,data1){
 	fkvObj.get('test',function(err,data){
@@ -55,3 +85,4 @@ fkvObj.set('test6',{name:'zenboss'},function(err1,data1){
 	});
 	
 });
+
