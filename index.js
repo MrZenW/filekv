@@ -28,8 +28,23 @@ var _getDataFileSubDir = function(md5key){
 var filekv = function(opt){
 	var self = this;
 	if(!!opt.fileDir)self.setFileDir(opt.fileDir);
+	if(!!opt.workQueueMax)self.setWorkQueueMax(opt.workQueueMax);
+	self.workQueue = [];
+	self.workQueueMax = self.workQueueMax||1000;
+	self.workQueueNowRun = 0;
 
 };
+
+filekv.prototype.setFileDir = function(path){
+	var self = this;
+	self.fileDir = path;
+	return self.fileDir;
+};
+filekv.prototype.setWorkQueueMax = function(maxnum){
+	self.workQueueMax = maxnum;
+}
+
+
 filekv.prototype.tool = function(){};
 
 filekv.prototype.tool.mkdirs = function(dir,mode,cb){
@@ -53,13 +68,35 @@ filekv.prototype.tool.mkdirs = function(dir,mode,cb){
 };
 
 
-
-
-filekv.prototype.setFileDir = function(path){
+filekv.prototype._queue = function(doFn){
 	var self = this;
-	self.fileDir = path;
-	return self.fileDir;
+	self.workQueue.push(doFn);//将函数放入全局队列
+	self._doQueue();
+	
+
+
 };
+filekv.prototype._doQueue = function(){
+	var self = this;
+	if(self.workQueueNowRun<self.workQueueMax){
+		self.workQueueNowRun++;
+		var fn = self.workQueue.pop();
+
+		if(!!fn){
+			fn(function(){
+				self.workQueueNowRun--;
+				self._doQueue();
+			})
+		}else{
+			self.workQueueNowRun--;
+		}
+
+	}
+	
+};
+
+
+
 
 filekv.prototype.has = function(key,opt,cb){
 	var self = this;
@@ -70,13 +107,18 @@ filekv.prototype.has = function(key,opt,cb){
 	cb = cb||function(){};
 	var md5key = md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
-	fs.exists(filePath,function(exists){
-        if(exists){
-            cb(null,filePath);
-        }else{
-            cb(null,exists)
-        }
-    });
+	self._queue(function(queueCB){
+		fs.exists(filePath,function(exists){
+
+	        if(exists){
+	        	queueCB.call(self,null,filePath);
+	            cb(null,filePath);
+	        }else{
+	        	queueCB.call(self,null,exists);
+	            cb(null,exists)
+	        }
+	    });
+	});
 };
 
 
@@ -93,39 +135,52 @@ filekv.prototype.get = function(key,opt,cb){
 	var valueData = null;
 	var createTime = 0;
 	var expireTime = 0;
-	readFileLine(filePath,function(lineData,lineNum){
-		if(lineNum==0){
-			expireTime = _parseInt(lineData+'');
-			if(expireTime>0 && expireTime<=_parseInt(Date.now()/1000)){
-				self.del(key);
-				cb(new Error('key expire'));
-				return false;
+	self._queue(function(queueCB){
+
+		readFileLine(filePath,function(lineData,lineNum){
+			if(lineNum==0){
+				expireTime = _parseInt(lineData+'');
+				if(expireTime>0 && expireTime<=_parseInt(Date.now()/1000)){
+					self.del(key);
+
+					queueCB.call(self,new Error('key expire'));
+
+					cb(new Error('key expire'));
+					return false;
+				}
+			}else if(lineNum==1){
+				createTime = _parseInt(lineData+'');
+			}else if(lineNum==2){ //data
+				try{
+					valueData = JSON.parse(lineData+'', function(key, value) {
+	    					return value && value.type === 'Buffer' 
+	    					? new Buffer(value.data)
+	      					: value; // Buffer类型特殊处理
+	  				});
+				}catch(ex){
+					queueCB.call(self,ex);
+
+					cb(ex);
+					return false;
+				}
 			}
-		}else if(lineNum==1){
-			createTime = _parseInt(lineData+'');
-		}else if(lineNum==2){ //data
-			try{
-				valueData = JSON.parse(lineData+'', function(key, value) {
-    					return value && value.type === 'Buffer' 
-    					? new Buffer(value.data)
-      					: value; // Buffer类型特殊处理
-  				});
-			}catch(ex){
-				cb(ex);
-				return false;
+		},function(err,endType,nowLineNum){
+
+			if(err){
+				queueCB.call(self,err);
+				cb(err);
+			}else{
+				if(endType=='end'){
+					queueCB.call(self,null,valueData);
+					cb(null,valueData);
+				}
 			}
-		}
-	},function(err,endType,nowLineNum){
-		// console.log(arguments)
-		if(err){
-			cb(err);
-		}else{
-			if(endType=='end'){
-				cb(null,valueData);
-			}
-		}
+		});
+
 	});
+	
 };
+
 filekv.prototype.set = function(key,value,expireTime,opt,cb){
 	var self = this;
 	if('function' == typeof expireTime){
@@ -142,6 +197,7 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 	var md5key = md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
 
+
 	self.tool.mkdirs(filePath,function(){
 		var fileAllPath = filePath+'/'+md5key+'.fkv';
 		var valueData = null;
@@ -151,8 +207,15 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 		fileData += expireTime+'\n';
 		fileData += createTime+'\n';
 		fileData += JSON.stringify(value);
+		self._queue(function(queueCB){
+			
+			fs.writeFile(fileAllPath,fileData,function(err){
+				cb.apply(self,arguments);
+				queueCB.apply(self,arguments);
+			});
 
-		fs.writeFile(fileAllPath,fileData,cb)
+		});
+		
 	});
 
 };
