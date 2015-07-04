@@ -6,13 +6,15 @@
  * Email:	zenyes@gmail.com
  */
 "use strict";
-var readFileLine = require('readFileLine');
+var readFileLine	= require('readFileLine');
+var workQueue		= require('workqueue');
+
 var fs = require('fs');
 var crypto = require('crypto');
 
 var _innerNextTick = setImmediate;
 
-var md5 = function(str){
+var _md5 = function(str){
 	str = str+'';
 	var md5hash = crypto.createHash('md5');
 	md5hash.update(str);
@@ -24,13 +26,15 @@ var _getDataFileSubDir = function(md5key){
 	return md5key[0]+md5key[1]+md5key[2]+'/'+md5key[3]+md5key[4]+md5key[5];
 };
 
-var filekv = function(opt){
+var filekv = function(config){
 	var self = this;
-	if(!!opt.fileDir)self.setFileDir(opt.fileDir);
-	if(!!opt.workQueueMax)self.setWorkQueueMax(opt.workQueueMax);
-	self.workQueue = [];
-	self.workQueueMax = self.workQueueMax||1000;
-	self.workQueueNowRun = 0;
+	self.setFileDir(config.fileDir);
+
+	self._workQueue = workQueue.create({
+		workMax:config.workMax||config.workQueueMax||1000
+	});
+
+
 
 };
 filekv.create = function(config){
@@ -41,11 +45,15 @@ filekv.create = function(config){
 
 filekv.prototype.setFileDir = function(path){
 	var self = this;
+	if(!path){
+		throw new Error("Config item:\"fileDir\" can't empty, which not have default value!");
+		return;
+	}
 	self.fileDir = path;
 	return self.fileDir;
 };
-filekv.prototype.setWorkQueueMax = function(maxnum){
-	this.workQueueMax = parseInt(maxnum)||1;
+filekv.prototype.setWorkMax = function(maxnum){
+	this._workQueue.setQueueMax(maxnum);
 }
 
 
@@ -72,39 +80,6 @@ filekv.prototype.tool.mkdirs = function(dir,mode,cb){
 };
 
 
-filekv.prototype._queue = function(doFn){
-	var self = this;
-	self.workQueue.push(doFn);//将函数放入全局队列
-	self._doQueue();
-	
-
-
-};
-filekv.prototype._doQueue = function(){
-	var self = this;
-	_innerNextTick(function(){
-		if(self.workQueueNowRun<self.workQueueMax){
-			self.workQueueNowRun++;
-			var fn = self.workQueue.pop();
-
-			if(!!fn){
-				fn(function(){
-					self.workQueueNowRun--;
-					self._doQueue();
-					
-				})
-			}else{
-				self.workQueueNowRun--;
-			}
-
-		}
-	});
-	
-};
-
-
-
-
 filekv.prototype.has = function(key,opt,cb){
 	var self = this;
 	if('function' == typeof opt){
@@ -112,9 +87,9 @@ filekv.prototype.has = function(key,opt,cb){
 		opt = {};
 	}
 	cb = cb||function(){};
-	var md5key = md5(key);
+	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
-	self._queue(function(queueCB){
+	self._workQueue.queue(function(queueCB){
 		fs.exists(filePath,function(exists){
 
 	        if(exists){
@@ -137,12 +112,12 @@ filekv.prototype.get = function(key,opt,cb){
 	}
 	cb = cb||function(){};
 
-	var md5key = md5(key);
+	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	var valueData = null;
 	var createTime = 0;
 	var expireTime = 0;
-	self._queue(function(queueCB){
+	self._workQueue.queue(function(queueCB){
 
 		readFileLine(filePath,function(lineData,lineNum){
 			if(lineNum==0){
@@ -201,7 +176,7 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 	opt = opt||{};
 	cb = cb||function(){};
 
-	var md5key = md5(key);
+	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
 
 
@@ -215,7 +190,7 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 		fileData += expireTime+'\n';
 		fileData += createTime+'\n';
 		fileData += JSON.stringify(value);
-		self._queue(function(queueCB){
+		self._workQueue.queue(function(queueCB){
 			
 			fs.writeFile(fileAllPath,fileData,function(err){
 				cb.apply(self,arguments);
@@ -235,7 +210,7 @@ filekv.prototype.del = function(key,opt,cb){
 	}
 	cb = cb||function(){};
 
-	var md5key = md5(key);
+	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	fs.unlink(filePath,cb);
 };
