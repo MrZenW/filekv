@@ -1,7 +1,8 @@
-# filekv
+# FileKV
 
 This is a key&value storage library, which uses file system to store data.
 
+![filekv logo](https://raw.githubusercontent.com/zenboss/zenboss.github.io/master/images/filekv_logo.png)
 
 
 
