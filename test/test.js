@@ -4,13 +4,13 @@ var fs = require('fs');
 
 var fkvObj = require('../index.js').create({
 	fileDir:__dirname+'/data',
-	
-	workMax:1000
+	workQueueMax:1000
+
 
 });
 
 
-for(var i =0;i<1000;i++){
+for(var i =0;i<90000;i++){
 	(function(){
 
 		var innerI = i;
@@ -21,7 +21,7 @@ for(var i =0;i<1000;i++){
 	})();
 }
 
-// for(var i =0;i<1000;i++){
+// for(var i =0;i<90000;i++){
 // 	(function(){
 
 // 		var innerI = i;

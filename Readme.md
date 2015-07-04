@@ -1,12 +1,12 @@
 # filekv
 
-This is a key&value storage library, which uses file system to store data.
+This is a key&value storage library which uses file system to store data.
 
 
 
 
 
-# Install
+#Install
 
 >$ npm install filekv -g
 
@@ -20,15 +20,15 @@ var filekv = require('filekv');
 
 var filekvClient = new filekv({
 
-        fileDir:__dirname+'/data', //Here is your datafile dir! This config item not have default value!!!
+        fileDir:__dirname+'/data',//Here is your datafile dir
 
-        workQueueMax:1000 //This number can't greater than your OS open file max number!
+        workQueueMax:1000 //This number is your OS open file max number
 
 });
 
 
 
-filekvClient.set('userinfo',{name:'wzy',sex:1,github:'http://www.github.com/zenboss'},(Date.now()/1000)+3600,function(err){
+filekvClient.set('userinfo',{name:'zenboss',sex:1},(Date.now()/1000)+3600,function(err){
 
 	console.log(err);
 
@@ -58,7 +58,7 @@ filekvClient.del('userinfo',function(err){
 
 ### filekv.prototype.set(key,value/object[,expireTime[,callback]])
 
->Use this function setting a key&value
+>Use this function set a key&value
 
 ### filekv.prototype.get(key[,callback])
 
@@ -70,4 +70,4 @@ filekvClient.del('userinfo',function(err){
 
 ### filekv.prototype.del(key[,callback])
 
->Use this function delete a key
+>Use this function remove a key
