@@ -4,11 +4,10 @@ var fs = require('fs');
 
 var fkvObj = require('../index.js').create({
 	fileDir:__dirname+'/data',
-	
+
 	workMax:1000
 
 });
-
 
 for(var i =0;i<1000;i++){
 	(function(){
@@ -40,7 +39,7 @@ fkvObj.set('test',{name:'zenboss'},function(err1,data1){
 	});
 });
 
-fkvObj.set('test2',{name:'zenboss'},((Date.now()/1000)|0)+1,function(err1,data1){
+fkvObj.set('test2',{name:'zenboss'},3600,function(err1,data1){
 	fkvObj.get('test2',function(err,data){
 		console.log(data,'test2')
 	});
@@ -52,13 +51,13 @@ fkvObj.set('test3','zenboss',function(err1,data1){
 	});
 });
 
-fkvObj.set('test4',{name:'zenboss'},((Date.now()/1000)|0)+1,function(err1,data1){
+fkvObj.set('test4',{name:'zenboss'},1,function(err1,data1){
 	fkvObj.get('test4',function(err,data){
 		console.log(data,'test4')
 	});
 });
 
-fkvObj.set('test5',{name:'zenboss'},((Date.now()/1000)|0)-1,function(err1,data1){
+fkvObj.set('test5',{name:'zenboss'},-1,function(err1,data1){
 	fkvObj.get('test5',function(err,data){
 		console.log(data,'test5: expire test')
 	});

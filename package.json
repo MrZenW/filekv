@@ -1,11 +1,16 @@
 {
   "name": "filekv",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "This is a key&value storage library, which uses file system to store data.",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
+  "dependencies": {
+    "readfileline": "^1.0.0",
+    "workqueue": "^1.0.0"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,23 +24,10 @@
     "key",
     "value"
   ],
-  "author": {
-    "name": "zenboss"
-  },
+  "author": "zenboss <zenyes@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/zenboss/filekv/issues"
   },
-  "homepage": "https://github.com/zenboss/filekv",
-  "dependencies": {
-    "readfileline": "^1.0.0",
-    "workqueue": "^1.0.0"
-  },
-  "devDependencies": {},
-  "readme": "# filekv\r\n\r\nThis is a key&value storage library, which uses file system to store data.\r\n\r\n\r\n\r\n\r\n\r\n# Install\r\n\r\n>$ npm install filekv -g\r\n\r\n\r\n\r\n# How to use\r\n\r\n``` javascript\r\n\r\nvar filekv = require('filekv');\r\n\r\nvar filekvClient = new filekv({\r\n\r\n        fileDir:__dirname+'/data', //Here is your datafile dir! This config item not have default value!!!\r\n\r\n        workQueueMax:1000 //This number can't greater than your OS open file max number!\r\n\r\n});\r\n\r\n\r\n\r\nfilekvClient.set('userinfo',{name:'wzy',sex:1,github:'http://www.github.com/zenboss'},(Date.now()/1000)+3600,function(err){\r\n\r\n\tconsole.log(err);\r\n\r\n});\r\n\r\nfilekvClient.get('userinfo',function(err,data){\r\n\r\n\tconsole.log(err,data);\r\n\r\n});\r\n\r\nfilekvClient.has('userinfo',function(err,isHas){\r\n\r\n\tconsole.log(err,isHas);\r\n\r\n});\r\n\r\nfilekvClient.del('userinfo',function(err){\r\n\r\n\tconsole.log(err);\r\n\r\n});\r\n\r\n```\r\n\r\n# API\r\n\r\n### filekv.prototype.set(key,value/object[,expireTime[,callback]])\r\n\r\n>Use this function setting a key&value\r\n\r\n### filekv.prototype.get(key[,callback])\r\n\r\n>Use this function get a key&value\r\n\r\n### filekv.prototype.has(key[,callback])\r\n\r\n>Use this function check a key exist\r\n\r\n### filekv.prototype.del(key[,callback])\r\n\r\n>Use this function delete a key",
-  "readmeFilename": "Readme.md",
-  "gitHead": "46dba247523d7c9633822f7e8f4f3021b60e38b3",
-  "_id": "filekv@1.0.5",
-  "_shasum": "2921cfe30703dbabcb4a7765501eeb7004997180",
-  "_from": "filekv@*"
+  "homepage": "https://github.com/zenboss/filekv"
 }

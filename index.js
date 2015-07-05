@@ -37,11 +37,10 @@ var filekv = function(config){
 
 
 };
+
 filekv.create = function(config){
 	return new filekv(config);
 };
-
-
 
 filekv.prototype.setFileDir = function(path){
 	var self = this;
@@ -93,10 +92,10 @@ filekv.prototype.has = function(key,opt,cb){
 		fs.exists(filePath,function(exists){
 
 	        if(exists){
-	        	queueCB.call(self,null,filePath);
+	        	queueCB(null,filePath);
 	            cb(null,filePath);
 	        }else{
-	        	queueCB.call(self,null,exists);
+	        	queueCB(null,exists);
 	            cb(null,exists)
 	        }
 	    });
@@ -120,41 +119,47 @@ filekv.prototype.get = function(key,opt,cb){
 	self._workQueue.queue(function(queueCB){
 
 		readFileLine(filePath,function(lineData,lineNum){
-			if(lineNum==0){
-				expireTime = parseInt(lineData+'')||0;
-				if(expireTime>0 && expireTime<=parseInt(Date.now()/1000)){
-					self.del(key);
+			switch(lineNum){
+				case 0:
 
-					queueCB.call(self,new Error('key expire'));
+					expireTime = parseInt(lineData+'')||0;
+					if(expireTime!=0 && expireTime<=parseInt(Date.now()/1000)){
+						self.del(key);
 
-					cb(new Error('key expire'));
-					return false;
-				}
-			}else if(lineNum==1){
-				createTime = parseInt(lineData+'')||0;
-			}else if(lineNum==2){ //data
-				try{
-					valueData = JSON.parse(lineData+'', function(key, value) {
-	    					return value && value.type === 'Buffer' 
-	    					? new Buffer(value.data)
-	      					: value; // Buffer类型特殊处理
-	  				});
-				}catch(ex){
-					queueCB.call(self,ex);
+						var cbError = new Error('key expired');
+						queueCB(cbError);
+						cb(cbError);
 
-					cb(ex);
-					return false;
-				}
+						return false;
+					}
+					break;
+				case 1:
+					createTime = parseInt(lineData+'')||0;
+					break;
+				case 2: //data
+					try{
+						valueData = JSON.parse(lineData+'', function(key, value) {
+		    					return value && value.type === 'Buffer' 
+		    					? new Buffer(value.data)
+		      					: value; // Buffer类型特殊处理
+		  				});
+					}catch(ex){
+						queueCB(ex);
+						cb(ex);
+						return false;
+					}
+					break;
+				
 			}
 		},function(err,endType,nowLineNum){
 
 			if(err){
-				queueCB.call(self,err);
+				queueCB(err);
 				cb(err);
 			}else{
 				if(endType=='end'){
-					queueCB.call(self,null,valueData);
-					cb(null,valueData);
+					queueCB(null,valueData,createTime,expireTime);
+					cb(null,valueData,createTime,expireTime);
 				}
 			}
 		});
@@ -180,12 +185,16 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
 
 
-	self.tool.mkdirs(filePath,function(){
+	self.tool.mkdirs(filePath,function(err){//TODO : this callback function's arguments need check error
+		if(!!err){
+			cb(err);
+			return;
+		}
+		var fileAllPath		= filePath+'/'+md5key+'.fkv';
+		var createTime		= parseInt(Date.now()/1000);
+		expireTime			= parseInt(expireTime)||0;
+		if(expireTime!=0)expireTime += createTime;
 
-		var fileAllPath = filePath+'/'+md5key+'.fkv';
-		var valueData = null;
-		var createTime = parseInt(Date.now()/1000);
-		expireTime = parseInt(expireTime)||0;
 		var fileData = '';
 		fileData += expireTime+'\n';
 		fileData += createTime+'\n';
@@ -195,6 +204,10 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 			fs.writeFile(fileAllPath,fileData,function(err){
 				cb.apply(self,arguments);
 				queueCB.apply(self,arguments);
+
+				if(expireTime!=0 && expireTime<=createTime){
+					self.del(key);
+				}
 			});
 
 		});
@@ -203,7 +216,8 @@ filekv.prototype.set = function(key,value,expireTime,opt,cb){
 
 };
 
-filekv.prototype.del = function(key,opt,cb){
+
+filekv.prototype.delete = filekv.prototype.del = function(key,opt,cb){
 	if('function' == typeof opt){
 		cb = opt;
 		opt = {};
@@ -214,6 +228,5 @@ filekv.prototype.del = function(key,opt,cb){
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	fs.unlink(filePath,cb);
 };
-
 
 module.exports = filekv;
