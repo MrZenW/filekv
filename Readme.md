@@ -20,16 +20,19 @@ This is a key&value storage library, which uses file system to store data.
 var filekv = require('filekv');
 
 var filekvClient = new filekv({
+		//Here is your datafile dir!
+		//!!!This config item not have default value!!!
+        fileDir:__dirname+'/data', 
 
-        fileDir:__dirname+'/data', //Here is your datafile dir! This config item not have default value!!!
-
-        workQueueMax:1000 //This number can't greater than your OS open file max number!
+		//This number can't greater than your OS open file max number!
+		//This config item default is 1000
+        workMax:1000 
 
 });
 
 
 
-filekvClient.set('userinfo',{name:'wzy',sex:1,github:'http://www.github.com/zenboss'},(Date.now()/1000)+3600,function(err){
+filekvClient.set('userinfo',{name:'wzy',sex:1,github:'http://www.github.com/zenboss'},3600,function(err){
 
 	console.log(err);
 
@@ -57,7 +60,7 @@ filekvClient.del('userinfo',function(err){
 
 # API
 
-### filekv.prototype.set(key,value/object[,expireTime[,callback]])
+### filekv.prototype.set(key,value/object[,lifeTime[,callback]])
 
 >Use this function setting a key&value
 

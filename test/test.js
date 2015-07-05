@@ -9,7 +9,7 @@ var fkvObj = require('../index.js').create({
 
 });
 
-for(var i =0;i<1000;i++){
+for(var i =0;i<90000;i++){
 	(function(){
 
 		var innerI = i;

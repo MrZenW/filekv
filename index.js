@@ -168,52 +168,54 @@ filekv.prototype.get = function(key,opt,cb){
 	
 };
 
-filekv.prototype.set = function(key,value,expireTime,opt,cb){
+filekv.prototype.set = function(key,value,lifeTime,opt,cb){
 	var self = this;
-	if('function' == typeof expireTime){
-		cb = expireTime;
-		expireTime = 0;
+	if('function' == typeof lifeTime){
+		cb = lifeTime;
+		lifeTime = 0;
 	}
 	if('function' == typeof opt){
 		cb = opt;
 		opt = {};
 	}
-	opt = opt||{};
-	cb = cb||function(){};
+	opt 		= opt||{};
+	cb 			= cb||function(){};
+	lifeTime	= parseInt(lifeTime)||0;
 
-	var md5key = _md5(key);
-	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
+	var md5key		= _md5(key);
+	var filePath	= this.fileDir+'/'+_getDataFileSubDir(md5key)+'/';
 
 
-	self.tool.mkdirs(filePath,function(err){//TODO : this callback function's arguments need check error
-		if(!!err){
-			cb(err);
-			return;
-		}
-		var fileAllPath		= filePath+'/'+md5key+'.fkv';
-		var createTime		= parseInt(Date.now()/1000);
-		expireTime			= parseInt(expireTime)||0;
-		if(expireTime!=0)expireTime += createTime;
+	self._workQueue.queue(function(queueCB){
+		self.tool.mkdirs(filePath,function(err){
+			if(!!err){
+				queueCB(err);
+				cb(err);
+				return;
+			}
+			var fileAllPath		= filePath+'/'+md5key+'.fkv';
+			var createTime		= parseInt(Date.now()/1000);
+			var expireTime		= 0;
 
-		var fileData = '';
-		fileData += expireTime+'\n';
-		fileData += createTime+'\n';
-		fileData += JSON.stringify(value);
-		self._workQueue.queue(function(queueCB){
-			
-			fs.writeFile(fileAllPath,fileData,function(err){
-				cb.apply(self,arguments);
-				queueCB.apply(self,arguments);
+			if(lifeTime!=0)expireTime = createTime + lifeTime;
 
-				if(expireTime!=0 && expireTime<=createTime){
-					self.del(key);
-				}
-			});
+			var fileData = '';
+			fileData += expireTime+'\n';
+			fileData += createTime+'\n';
+			fileData += JSON.stringify(value);
+				
+				fs.writeFile(fileAllPath,fileData,function(err){
+					queueCB.apply(self,arguments);
+					cb.apply(self,arguments);
+
+					if(expireTime!=0 && expireTime<=createTime){
+						self.del(key);
+					}
+				});
 
 		});
-		
-	});
 
+	});
 };
 
 
