@@ -6,4 +6,4 @@
  * Email:	zenyes@gmail.com
  */
 "use strict";
-module.exports = require('./lib/filekv');
+module.exports = require('./lib/filekv.js');
