@@ -11,6 +11,8 @@ var workQueue		= require('workqueue');
 
 var fs = require('fs');
 var crypto = require('crypto');
+var events = require('events');
+var util = require('util');
 
 var _innerNextTick = setImmediate;
 
@@ -27,6 +29,8 @@ var _getDataFileSubDir = function(md5key){
 };
 
 var filekv = function(config){
+	events.EventEmitter.call(this);
+
 	var self = this;
 	self.setFileDir(config.fileDir);
 
@@ -34,9 +38,8 @@ var filekv = function(config){
 		workMax:config.workMax||config.workQueueMax||1000
 	});
 
-
-
 };
+util.inherits(filekv,events.EventEmitter);
 
 filekv.create = function(config){
 	return new filekv(config);
@@ -88,20 +91,64 @@ filekv.prototype.has = function(key,opt,cb){
 	cb = cb||function(){};
 	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
+	var expireTime = 0;
 	self._workQueue.queue(function(queueCB){
-		fs.exists(filePath,function(exists){
 
-	        if(exists){
-	        	queueCB(null,filePath);
-	            cb(null,filePath);
-	        }else{
-	        	queueCB(null,exists);
-	            cb(null,exists)
-	        }
-	    });
+		var unifyCallBack = function(){
+			if(expireTime!=0 && expireTime<=parseInt(Date.now()/1000)){
+				cb(new Error('key expired'),false);
+			}else{
+				cb(null,filePath);
+			}
+			queueCB(null,filePath);
+		}
+
+		readFileLine(filePath,function(lineData,lineNum){
+			switch(lineNum){
+				case 0:
+					expireTime = parseInt(lineData)||0;
+					unifyCallBack();
+					return false;
+					break;
+				default:
+					return false;
+			}
+
+		},function(err,endType,nowLineNum){
+			if(err){
+				cb(err,false);
+			}else{
+				if(endType=='end'){
+					unifyCallBack();
+				}
+			}
+		});
 	});
 };
 
+filekv.prototype.add = function(key,opt,cb){
+	var self = this;
+	self.has(key,function(err,isExist){
+		if(isExist){
+			cb = cb||function(){};
+			cb(new Error('key existed'));
+		}else{
+			filekv.prototype.set(key,opt,cb);
+		}
+	})
+};
+
+filekv.prototype.replace = function(key,opt,cb){
+	var self = this;
+	self.has(key,function(err,isExist){
+		if(!isExist){
+			cb = cb || function(){};
+			cb(new Error('key not exist'));
+		}else{
+			filekv.prototype.set(key,opt,cb);
+		}
+	})
+};
 
 filekv.prototype.get = function(key,opt,cb){
 	var self = this;
@@ -114,9 +161,19 @@ filekv.prototype.get = function(key,opt,cb){
 	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
 	var valueData = null;
-	var createTime = 0;
+	var updateTime = 0;
 	var expireTime = 0;
+
 	self._workQueue.queue(function(queueCB){
+
+		//this function is unify callback function, it do many job.
+		var unifyCallBack = function(err,valueData,info){ 
+// console.log(err,'$$$$');
+
+			queueCB.apply(self,arguments);
+			cb.apply(self,arguments);
+			self.emit('get',key,err,valueData,info,opt);
+		}
 
 		readFileLine(filePath,function(lineData,lineNum){
 			switch(lineNum){
@@ -127,14 +184,15 @@ filekv.prototype.get = function(key,opt,cb){
 						self.del(key);
 
 						var cbError = new Error('key expired');
-						queueCB(cbError);
-						cb(cbError);
+						// queueCB(cbError);
+						// cb(cbError);
+						unifyCallBack(cbError);
 
 						return false;
 					}
 					break;
 				case 1:
-					createTime = parseInt(lineData+'')||0;
+					updateTime = parseInt(lineData+'')||0;
 					break;
 				case 2: //data
 					try{
@@ -144,22 +202,29 @@ filekv.prototype.get = function(key,opt,cb){
 		      					: value; // Buffer类型特殊处理
 		  				});
 					}catch(ex){
-						queueCB(ex);
-						cb(ex);
+						// queueCB(ex);
+						// cb(ex);
+						unifyCallBack(ex);
 						return false;
 					}
 					break;
 				
 			}
 		},function(err,endType,nowLineNum){
-
 			if(err){
-				queueCB(err);
-				cb(err);
+				// queueCB(err);
+				// cb(err);
+console.log(err,'$$$$');
+				
+				unifyCallBack(err);
 			}else{
 				if(endType=='end'){
-					queueCB(null,valueData,createTime,expireTime);
-					cb(null,valueData,createTime,expireTime);
+					// queueCB(null,valueData,updateTime,expireTime);
+					// cb(null,valueData,updateTime,expireTime);
+					unifyCallBack(null,valueData,{
+						updateTime:updateTime,
+						expireTime:expireTime
+					});
 				}
 			}
 		});
@@ -187,31 +252,36 @@ filekv.prototype.set = function(key,value,lifeTime,opt,cb){
 
 
 	self._workQueue.queue(function(queueCB){
-		self.tool.mkdirs(filePath,function(err){
+		var unifyCallBack = function(err,_more){
+			queueCB(err,_more);
+			cb(err,_more);
+			self.emit('set',key,value,lifeTime,opt);
+		}
+		self.tool.mkdirs(filePath,function(err,_more){
 			if(!!err){
-				queueCB(err);
-				cb(err);
+				unifyCallBack(err,_more);
 				return;
 			}
 			var fileAllPath		= filePath+'/'+md5key+'.fkv';
-			var createTime		= parseInt(Date.now()/1000);
+			var updateTime		= parseInt(Date.now()/1000);
 			var expireTime		= 0;
 
-			if(lifeTime!=0)expireTime = createTime + lifeTime;
+			if(lifeTime!=0)expireTime = updateTime + lifeTime;
 
 			var fileData = '';
 			fileData += expireTime+'\n';
-			fileData += createTime+'\n';
+			fileData += updateTime+'\n';
 			fileData += JSON.stringify(value);
 				
-				fs.writeFile(fileAllPath,fileData,function(err){
-					queueCB.apply(self,arguments);
-					cb.apply(self,arguments);
-
-					if(expireTime!=0 && expireTime<=createTime){
-						self.del(key);
-					}
-				});
+			fs.writeFile(fileAllPath,fileData,function(err,_more){
+				// queueCB.apply(self,arguments);
+				// cb.apply(self,arguments);
+				// self.emit('set',key,value,lifeTime,opt);
+				unifyCallBack(err,_more);
+				if(expireTime!=0 && expireTime<=updateTime){
+					self.del(key);
+				}
+			});
 
 		});
 
@@ -220,6 +290,7 @@ filekv.prototype.set = function(key,value,lifeTime,opt,cb){
 
 
 filekv.prototype.delete = filekv.prototype.del = function(key,opt,cb){
+	var self = this;
 	if('function' == typeof opt){
 		cb = opt;
 		opt = {};
@@ -228,7 +299,11 @@ filekv.prototype.delete = filekv.prototype.del = function(key,opt,cb){
 
 	var md5key = _md5(key);
 	var filePath = this.fileDir+'/'+_getDataFileSubDir(md5key)+'/'+md5key+'.fkv';
-	fs.unlink(filePath,cb);
+	fs.unlink(filePath,function(err){
+		cb(err);
+		self.emit('del',key,err,opt);
+	});
+
 };
 
 module.exports = filekv;
