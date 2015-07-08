@@ -1,7 +1,8 @@
 "use strict";
+var now = Date.now();
 var fs = require('fs');
 var assert = require('assert')
-var fileDir = '/filekv_test_data_folder';
+var fileDir = '/filekv_test_data_folder_'+now;
 var fkvObj = require('../index.js').create({
 	fileDir:fileDir,
 	workMax:1000
@@ -102,10 +103,20 @@ assert.equal(_md5('123').toUpperCase(),'202cb962ac59075b964b07152d234b70'.toUppe
 assert.equal(_md5('filekv').toUpperCase(),'ec9310957ee4cedd23ce617051c58ea3'.toUpperCase());
 assert.equal(_md5('中文').toUpperCase(),'a7bac2239fcdcb3a067903d8077c4a07'.toUpperCase());
 
+
+/*
+ * lib tool testing
+ */
+var tool = require('../lib/tool.js');
+var nowMd5 = _md5(now);
+assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.substr(3,3));
+
+
 /*
  * lib mkdirs testing
  */
-var testDataFolder = fileDir+'/a/b/c';
+
+var testDataFolder = fileDir+tool.buildDataFileSubDir(_md5(Date.now()));
 var filekvFSTool = require('../lib/fs.js');
 fs.unlink(testDataFolder,function(){
 	filekvFSTool.mkdirs(testDataFolder,function(){
