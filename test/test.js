@@ -86,6 +86,7 @@ fkvObj.set('testkey4',value,function(){
 //test replace function
 fkvObj.set('testkey5',value,function(){
 	fkvObj.replace('testkey5',value,function(err){
+		util.error(err);
 		assert.equal(err,null);		
 	})
 	fkvObj.replace('testkey5-2',value,function(err){
