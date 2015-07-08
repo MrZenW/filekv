@@ -18,8 +18,10 @@ var value = 'filekv test string';
 
 //test set, and, get
 fkvObj.set('testkey',value,function(err){
-	fkvObj.get('testkey',function(err,data){
+	fkvObj.get('testkey',function(err,data,info){
+		util.error(err);
 		util.error(data);
+		util.error(info);
 		assert.equal(typeof data,'string');
 		assert.equal(data,value);
 
