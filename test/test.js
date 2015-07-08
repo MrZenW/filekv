@@ -1,114 +1,116 @@
 "use strict";
 var fs = require('fs');
-
-
+var assert = require('assert')
+var fileDir = '/filekv_test_data_folder';
 var fkvObj = require('../index.js').create({
-	// fileDir:__dirname+'/data',
-	fileDir:'/test_data',
-
+	fileDir:fileDir,
 	workMax:1000
-
 });
 
-fkvObj.on('set',function(key,err,value,info,opt){
-	console.log('\n',arguments,'set~~~~~~~~~')
-});
+assert.equal(typeof fkvObj,'object');
+assert.notEqual(fkvObj,null);
+assert.notEqual(fkvObj,undefined);
 
-fkvObj.on('get',function(){
-	console.log('\n',arguments,'get   #########')
+var value = 'filekv test string';
+var now = parseInt(Date.now()/1000);
+
+//test set, and, get
+fkvObj.set('testkey',value,function(err){
+	fkvObj.get('testkey',function(err,data){
+
+		assert.equal(typeof data,'string');
+		assert.equal(data,value);
+
+	})
+})
+
+//test set, delete, get
+fkvObj.set('testkey2',value,function(err){
+	fkvObj.del('testkey2',function(){
+		fkvObj.get('testkey2',function(err,data){
+
+			assert.equal(!!data,false);
+			assert.notEqual(data,value);
+
+		})		
+	});
+})
+
+//test key life time
+fkvObj.set('testkey3',value,5,function(){
+	fkvObj.get('testkey3',function(err,data){
+		assert.equal(value,data);
+		assert.equal(typeof value,typeof data);
+
+	})
+	setTimeout(function(){
+		fkvObj.get('testkey3',function(err,data){
+			assert.equal(value,data);
+			assert.equal(typeof value,typeof data);
+
+		})
+	},4e3);
+
+	setTimeout(function(){
+		fkvObj.get('testkey3',function(err,data){
+			assert.notEqual(value,data);
+			assert.notEqual(typeof value,typeof data);
+			assert.equal(!!data,false);
+
+		})
+	},5e3);
+
+	setTimeout(function(){
+		fkvObj.get('testkey3',function(err,data){
+			assert.notEqual(value,data);
+			assert.notEqual(typeof value,typeof data);
+			assert.equal(!!data,false);
+		})
+	},6e3);
 })
 
 
-// for(var i =0;i<90000;i++){
-// 	(function(){
+//test add function
+fkvObj.set('testkey4',value,function(){
+	fkvObj.add('testkey4',value,function(err){
+		assert.equal(err instanceof Error,true);
+	})
+	fkvObj.add('testkey4-2',value,function(err){
+		assert.equal(err,null);
+	})
 
-// 		var innerI = i;
-// 		console.log(innerI);
-// 		fkvObj.set(innerI,{id:innerI,str:Math.random()},function(err,data){
-// 			console.log(err,data,'for set text '+innerI);
-// 		});
-// 	})();
-// }
+});
 
-// for(var i =0;i<1000;i++){
-// 	(function(){
+//test replace function
+fkvObj.set('testkey5',value,function(){
+	fkvObj.replace('testkey5',value,function(err){
+		assert.equal(err,null);		
+	})
+	fkvObj.replace('testkey5-2',value,function(err){
+		assert.equal(err instanceof Error,true);
+	})
 
-// 		var innerI = i;
-// 		console.log(innerI);
-// 		fkvObj.get(innerI,function(err,data){
-// 			console.log(err,data,'for set text '+innerI);
-// 		});
-// 	})();
-// }
+});
 
 
-
-// fkvObj.set('test',{name:'zenboss'},0,function(err1,data1){
-// 	setInterval(function(){
-// 		console.log('!@')
-// 		fkvObj.get('test',function(err,data){
-// 			// console.log(err,data,'test')
-// 		});
-// 	},2000)
-// });
-fkvObj.set('test',{name:'zenboss'},8,function(err1,data1){
-	});
-setInterval(function(){
-	
-		fkvObj.get('test',function(){
-			console.log(arguments,'get function ~~~~~~')
-		});
-	
-
-},3000)
 
 /*
-fkvObj.set('test2',{name:'zenboss'},3600,function(err1,data1){
-	fkvObj.get('test2',function(err,data){
-		console.log(data,'test2')
-	});
-});
+ * lib md5 testing
+ */
+var _md5 = require('../lib/crypto.js').md5;
+assert.equal(_md5('123').toUpperCase(),'202cb962ac59075b964b07152d234b70'.toUpperCase());
+assert.equal(_md5('filekv').toUpperCase(),'ec9310957ee4cedd23ce617051c58ea3'.toUpperCase());
+assert.equal(_md5('中文').toUpperCase(),'a7bac2239fcdcb3a067903d8077c4a07'.toUpperCase());
 
-fkvObj.set('test3','zenboss',function(err1,data1){
-	fkvObj.get('test3',function(err,data){
-		console.log(data,'test3: save string test')
-	});
-});
-
-fkvObj.set('test4',{name:'zenboss'},1,function(err1,data1){
-	fkvObj.get('test4',function(err,data){
-		console.log(data,'test4')
-	});
-});
-
-fkvObj.set('test5',{name:'zenboss'},1,function(err1,data1){
-	setInterval(function(){
-		fkvObj.has('test5',function(err,data){
-			console.log(err,data,'test5: expire test')
-		});
-	},2000);
-});
-
-fkvObj.set('test6',{name:'zenboss'},function(err1,data1){
-	fkvObj.has('test6',function(err,isHas){
-
-		console.log(isHas,'test6 set, has test')
-
-		fkvObj.del('test6',function(){
-
-			fkvObj.has('test6',function(err,isHas){
-
-				console.log(isHas,'test6 del, has test')
-
-				fkvObj.get('test6',function(err,data){
-					
-					console.log(data,'test6')
-				});	
-			});
-			
+/*
+ * lib mkdirs testing
+ */
+var testDataFolder = fileDir+'/a/b/c';
+var filekvFSTool = require('../lib/fs.js');
+fs.unlink(testDataFolder,function(){
+	filekvFSTool.mkdirs(testDataFolder,function(){
+		fs.exists(testDataFolder,function(isExsts){
+			assert.equal(isExsts,true);
 		});
 	});
-	
 });
-
-*/
