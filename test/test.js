@@ -1,5 +1,6 @@
 "use strict";
 var now = Date.now();
+var util = require('util');
 var fs = require('fs');
 var assert = require('assert')
 var fileDir = '/filekv_test_data_folder_'+now;
@@ -117,12 +118,12 @@ assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.subs
  */
 
 var testDataFolder = fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
-util.debug(testDataFolder);
+util.error(testDataFolder);
 var filekvFSTool = require('../lib/fs.js');
 fs.unlink(testDataFolder,function(err){
-	util.debug(err);
+	util.error(err);
 	filekvFSTool.mkdirs(testDataFolder,function(err){
-		util.debug(err);
+		util.error(err);
 		fs.exists(testDataFolder,function(isExsts){
 			assert.equal(isExsts,true);
 		});
