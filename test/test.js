@@ -19,9 +19,7 @@ var value = 'filekv test string';
 //test set, and, get
 fkvObj.set('testkey',value,function(err){
 	fkvObj.get('testkey',function(err,data,info){
-		util.error(err);
-		util.error(data);
-		util.error(info);
+
 		assert.equal(typeof data,'string');
 		assert.equal(data,value);
 
@@ -42,7 +40,10 @@ fkvObj.set('testkey2',value,function(err){
 
 //test key life time
 fkvObj.set('testkey3',value,5,function(){
-	fkvObj.get('testkey3',function(err,data){
+	fkvObj.get('testkey3',function(err,data,info){
+		util.error(err);
+		util.error(data);
+		util.error(info);
 		assert.equal(value,data);
 		assert.equal(typeof value,typeof data);
 
