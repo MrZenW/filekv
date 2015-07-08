@@ -7,5 +7,5 @@ node_js:
   - "1.8"
   - "2.0"
   - "2.3"
-sudo: false
+sudo: required
 before_install: "npm install -g readfileline;npm install -g workqueue"
