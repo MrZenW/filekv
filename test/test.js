@@ -51,7 +51,7 @@ fkvObj.set('testkey3',value,5,function(){
 			assert.equal(typeof value,typeof data);
 
 		})
-	},4e3);
+	},3e3);
 
 	setTimeout(function(){
 		fkvObj.get('testkey3',function(err,data){
@@ -68,7 +68,7 @@ fkvObj.set('testkey3',value,5,function(){
 			assert.notEqual(typeof value,typeof data);
 			assert.equal(!!data,false);
 		})
-	},6e3);
+	},7e3);
 })
 
 
