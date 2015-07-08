@@ -3,7 +3,7 @@ var now = Date.now();
 var util = require('util');
 var fs = require('fs');
 var assert = require('assert')
-var fileDir = '/filekv_test_data_folder_'+now;
+var fileDir = __dirname+'/filekv_test_data_folder_'+now;
 var fkvObj = require('../index.js').create({
 	fileDir:fileDir,
 	workMax:1000
@@ -118,7 +118,7 @@ assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.subs
  * lib mkdirs testing
  */
 
-var testDataFolder = '.'+fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
+var testDataFolder = fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
 util.error(testDataFolder);
 var filekvFSTool = require('../lib/fs.js');
 fs.unlink(testDataFolder,function(err){
