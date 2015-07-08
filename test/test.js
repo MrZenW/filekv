@@ -117,7 +117,7 @@ assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.subs
  * lib mkdirs testing
  */
 
-var testDataFolder = fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
+var testDataFolder = '.'+fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
 util.error(testDataFolder);
 var filekvFSTool = require('../lib/fs.js');
 fs.unlink(testDataFolder,function(err){
