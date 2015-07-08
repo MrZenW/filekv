@@ -12,7 +12,7 @@ assert.notEqual(fkvObj,null);
 assert.notEqual(fkvObj,undefined);
 
 var value = 'filekv test string';
-var now = parseInt(Date.now()/1000);
+
 
 //test set, and, get
 fkvObj.set('testkey',value,function(err){
