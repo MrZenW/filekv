@@ -116,10 +116,13 @@ assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.subs
  * lib mkdirs testing
  */
 
-var testDataFolder = fileDir+tool.buildDataFileSubDir(_md5(Date.now()));
+var testDataFolder = fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
+util.debug(testDataFolder);
 var filekvFSTool = require('../lib/fs.js');
-fs.unlink(testDataFolder,function(){
-	filekvFSTool.mkdirs(testDataFolder,function(){
+fs.unlink(testDataFolder,function(err){
+	util.debug(err);
+	filekvFSTool.mkdirs(testDataFolder,function(err){
+		util.debug(err);
 		fs.exists(testDataFolder,function(isExsts){
 			assert.equal(isExsts,true);
 		});
