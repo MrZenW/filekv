@@ -11,3 +11,4 @@ node_js:
   - "2.0"
   - "2.3"
 sudo: false
+before_install: "npm install -g readfileline;npm install -g workqueue"
