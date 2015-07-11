@@ -1,4 +1,6 @@
 "use strict";
+
+
 var now = Date.now();
 var util = require('util');
 var fs = require('fs');
@@ -16,9 +18,84 @@ assert.notEqual(fkvObj,undefined);
 var value = 'filekv test string';
 
 
+fkvObj.on('set',function(input,output){
+
+	var key = input[0];
+	console.log('set event emit: '+key);
+});
+
+fkvObj.on('get',function(input,output){
+	var key = input[0];
+	console.log('get event emit: '+key);
+	var err = output[0];
+	var outValue = output[1];
+	switch(key){
+		case 'testkey1':
+		case 'testkey2':
+		case 'testkey3':
+			assert.equal(outValue==value || !outValue,true);
+			break;
+	}
+});
+
+fkvObj.on('replace',function(input,output){
+	var key = input[0];
+	var val = input[1];
+	console.log('replace event emit: '+key);
+
+	if(input[0]=='testkey5-2'){
+		//have error
+		assert.equal(output[0] instanceof Error,true);
+		fkvObj.get(key,function(err,data){
+			assert.notEqual(val,data);
+		});
+	}
+	if(input[0]=='testkey5'){
+		//no error
+		assert.equal(output[0] instanceof Error,false);
+		fkvObj.get(key,function(err,data){
+			assert.equal(val,data);
+		});
+	}
+});
+fkvObj.on('add',function(input,output){
+	var key = input[0];
+	var val = input[1];
+	console.log('add event emit: '+key);
+
+	if(input[0]=='testkey4-2'){
+		//no error
+		assert.equal(output[0] instanceof Error,false);
+		fkvObj.get(key,function(err,data){
+			assert.equal(val,data);
+		});
+
+	}
+	if(input[0]=='testkey4'){
+
+		//have error
+		assert.equal(output[0] instanceof Error,true);
+		fkvObj.get(key,function(err,data){
+			assert.notEqual(val,data);
+		});
+
+	}
+});
+
+fkvObj.on('delete',function(input,output){
+	var key = input[0];
+	console.log('delete event emit: '+key);
+	fkvObj.get(key,function(err,data){
+
+		assert.equal(err instanceof Error,true);
+		assert.notEqual(data,value);
+
+	});
+});
+
 //test set, and, get
-fkvObj.set('testkey',value,function(err){
-	fkvObj.get('testkey',function(err,data,info){
+fkvObj.set('testkey1',value,function(err){
+	fkvObj.get('testkey1',function(err,data,info){
 
 		assert.equal(typeof data,'string');
 		assert.equal(data,value);
@@ -40,10 +117,9 @@ fkvObj.set('testkey2',value,function(err){
 
 //test key life time
 fkvObj.set('testkey3',value,5,function(){
+	// assert.equal(1,2)
 	fkvObj.get('testkey3',function(err,data,info){
-		util.error(err);
-		util.error(data);
-		util.error(info);
+
 		assert.equal(value,data);
 		assert.equal(typeof value,typeof data);
 
@@ -77,10 +153,10 @@ fkvObj.set('testkey3',value,5,function(){
 
 //test add function
 fkvObj.set('testkey4',value,function(){
-	fkvObj.add('testkey4',value,function(err){
+	fkvObj.add('testkey4',value+'add',function(err){
 		assert.equal(err instanceof Error,true);
 	})
-	fkvObj.add('testkey4-2',value,function(err){
+	fkvObj.add('testkey4-2',value+'add4-2',function(err){
 		assert.equal(err,null);
 	})
 
@@ -88,11 +164,11 @@ fkvObj.set('testkey4',value,function(){
 
 //test replace function
 fkvObj.set('testkey5',value,function(){
-	fkvObj.replace('testkey5',value,function(err){
-		util.error(err);
+	fkvObj.replace('testkey5',value+'replace',function(err){
+		
 		assert.equal(err,null);		
 	})
-	fkvObj.replace('testkey5-2',value,function(err){
+	fkvObj.replace('testkey5-2',value+'replace5-2',function(err){
 		assert.equal(err instanceof Error,true);
 	})
 
@@ -122,14 +198,15 @@ assert.equal(tool.buildDataFileSubDir(nowMd5),nowMd5.substr(0,3)+'/'+nowMd5.subs
  */
 
 var testDataFolder = fileDir+'/'+tool.buildDataFileSubDir(_md5(Date.now()));
-util.error(testDataFolder);
+
 var filekvFSTool = require('../lib/fs.js');
 fs.unlink(testDataFolder,function(err){
-	util.error(err);
+	
 	filekvFSTool.mkdirs(testDataFolder,function(err){
-		util.error(err);
+		
 		fs.exists(testDataFolder,function(isExsts){
 			assert.equal(isExsts,true);
 		});
 	});
 });
+

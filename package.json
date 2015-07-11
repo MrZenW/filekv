@@ -7,7 +7,7 @@
     "test": "test"
   },
   "dependencies": {
-    "readfileline": "^1.0.0",
+    "readfileline": "^2.0.2",
     "workqueue": "^1.0.0"
   },
   "devDependencies": {},
@@ -23,6 +23,13 @@
     "system",
     "key",
     "value"
+  ],
+  "files": [
+    "LICENSE",
+    "Readme.md",
+    "index.js",
+    "History.md",
+    "lib/"
   ],
   "author": "zenboss <zenyes@gmail.com>",
   "license": "MIT",
