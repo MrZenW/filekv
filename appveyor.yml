@@ -9,6 +9,9 @@ environment:
     - nodejs_version: "1.8"
     - nodejs_version: "2.0"
     - nodejs_version: "2.3"
+install:
+  - npm install -g readfileline
+  - npm install -g workqueue
 build: off
 test_script:
   - node --version
