@@ -1,7 +1,9 @@
 # FileKV
 
 This is a key&value storage library, which uses file system to store data.
+
 ![filekv logo](https://raw.githubusercontent.com/zenboss/zenboss.github.io/master/images/filekv_logo.png)
+
 [![Build Status](https://travis-ci.org/zenboss/filekv.svg?branch=master)](https://travis-ci.org/zenboss/filekv) [![Build status](https://ci.appveyor.com/api/projects/status/rg01h0j4eals8rwt?svg=true)](https://ci.appveyor.com/project/zenboss/filekv)
 
 # Install
